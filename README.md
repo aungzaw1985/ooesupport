@@ -193,4 +193,4 @@ Brand Your Portal: Go to Admin Dashboard -> Company Settings to upload your logo
 
 📄 License
 
-This software is proprietary. Copyright © 2024 One O Eight Support Platform.
+This software is proprietary. Copyright © 2026 One O Eight Support Platform.
