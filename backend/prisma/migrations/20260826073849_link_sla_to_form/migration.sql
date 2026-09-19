@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Form" ADD COLUMN     "slaId" INTEGER;
+
+-- AddForeignKey
+ALTER TABLE "Form" ADD CONSTRAINT "Form_slaId_fkey" FOREIGN KEY ("slaId") REFERENCES "Sla"("id") ON DELETE SET NULL ON UPDATE CASCADE;

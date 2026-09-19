@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  font-family: 'Inter Tight', sans-serif;
+  /* Premium Deep Tactical Background - Subtle and Professional */
+  background-color: #0A0A0B;
+  background-image: 
+    radial-gradient(circle at 100% 0%, rgba(138, 5, 5, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at 0% 100%, rgba(230, 178, 57, 0.05) 0%, transparent 25%);
+  background-attachment: fixed;
+  color: #e5e5e5;
+}
+
+/* Custom Scrollbar - Elegant & Subtle */
+.tac-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.tac-scroll::-webkit-scrollbar-track { background: transparent; }
+.tac-scroll::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 0; }
+.tac-scroll::-webkit-scrollbar-thumb:hover { background: #8A0505; }
+
+@layer components {
+  .tac-panel {
+    @apply bg-[#111113] border border-[#1f1f23] shadow-2xl shadow-black/40 rounded-sm;
+  }
+  
+  .tac-panel-header {
+    @apply px-6 py-4 border-b border-[#1f1f23] flex items-center justify-between;
+  }
+
+  .tac-btn {
+    @apply font-mono uppercase tracking-widest text-[11px] font-bold py-2.5 px-5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-sm;
+  }
+  .tac-btn-crimson {
+    @apply text-white bg-[#8A0505] hover:bg-[#a30808] shadow-sm hover:shadow-[0_0_15px_rgba(138,5,5,0.3)];
+  }
+  .tac-btn-gold {
+    @apply text-black bg-[#E6B239] hover:bg-[#f0c354] shadow-sm hover:shadow-[0_0_15px_rgba(230,178,57,0.3)];
+  }
+  .tac-btn-ghost {
+    @apply text-gray-400 border border-[#2a2a2e] hover:text-white hover:border-[#E6B239] hover:bg-[#1a1a1d];
+  }
+
+  .tac-input {
+    @apply w-full bg-[#0A0A0B] border border-[#1f1f23] px-4 py-2.5 text-sm text-white font-mono placeholder-gray-700 transition-all duration-200 focus:outline-none focus:border-[#E6B239] focus:ring-1 focus:ring-[#E6B239] rounded-sm;
+  }
+
+  .tac-table-header {
+    @apply text-[10px] font-mono uppercase tracking-widest text-gray-500 px-6 py-4 text-left border-b border-[#1f1f23] bg-[#0e0e10];
+  }
+  .tac-table-row {
+    @apply text-sm px-6 py-4 border-b border-[#161618] hover:bg-[#161618] cursor-pointer transition-colors duration-150;
+  }
+
+  .tac-badge {
+    @apply inline-flex items-center px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-widest border rounded-sm;
+  }
+  
+  .nav-link {
+    @apply px-4 py-2 text-xs font-mono uppercase tracking-widest transition-colors rounded-sm;
+  }
+  .nav-link-active {
+    @apply text-white bg-[#1a1a1d];
+  }
+  .nav-link-inactive {
+    @apply text-gray-500 hover:text-white hover:bg-[#161618];
+  }
+}

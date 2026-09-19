@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Claymorphism Base Background */
+body {
+  background-color: #f0f4f8;
+  color: #3a4556;
+}
+
+/* TipTap Editor Styling */
+.ProseMirror:focus { outline: none; }
+.ProseMirror p { margin-bottom: 0.5rem; }
+.ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; margin-bottom: 0.5rem; }
+.ProseMirror { min-height: 120px; }
+
+/* Claymorphism Utility Classes */
+.clay {
+  background: #f0f4f8;
+  border-radius: 24px;
+  box-shadow: 8px 8px 16px rgba(174, 174, 192, 0.4), 
+              -8px -8px 16px rgba(255, 255, 255, 0.9);
+  transition: all 0.2s ease;
+}
+
+.clay-sm {
+  border-radius: 16px;
+  box-shadow: 6px 6px 12px rgba(174, 174, 192, 0.4), 
+              -6px -6px 12px rgba(255, 255, 255, 0.9);
+}
+
+.clay-input {
+  background: #eef2f6;
+  border-radius: 12px;
+  box-shadow: inset 4px 4px 8px rgba(174, 174, 192, 0.3), 
+              inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+}
+
+.clay-button {
+  background: #f0f4f8;
+  border-radius: 12px;
+  box-shadow: 6px 6px 12px rgba(174, 174, 192, 0.4), 
+              -6px -6px 12px rgba(255, 255, 255, 0.9);
+  transition: all 0.15s ease;
+  font-weight: 500;
+}
+
+.clay-button:hover {
+  box-shadow: 4px 4px 8px rgba(174, 174, 192, 0.4), 
+              -4px -4px 8px rgba(255, 255, 255, 0.9);
+}
+
+.clay-button:active {
+  box-shadow: inset 4px 4px 8px rgba(174, 174, 192, 0.3), 
+              inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+}
+
+/* For active tabs/toggles */
+.clay-active {
+  background: #e6ebf2;
+  box-shadow: inset 4px 4px 8px rgba(174, 174, 192, 0.3), 
+              inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+}
+
+/* TipTap Editor Modern Styling */
+.ProseMirror:focus {
+  outline: none;
+}
+
+.ProseMirror {
+  min-height: 120px;
+}
+
+/* Headings */
+.ProseMirror h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; }
+.ProseMirror h2 { font-size: 1.25rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; }
+.ProseMirror h3 { font-size: 1.1rem; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.5rem; }
+
+/* Paragraphs and Spacing */
+.ProseMirror p { margin-bottom: 0.5rem; line-height: 1.6; }
+
+/* Lists */
+.ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; margin-bottom: 0.5rem; }
+.ProseMirror ul { list-style-type: disc; }
+.ProseMirror ol { list-style-type: decimal; }
+.ProseMirror li { margin-bottom: 0.25rem; }
+
+/* Underline & Links */
+.ProseMirror u { text-decoration: underline; }
+.ProseMirror a { color: #3b82f6; text-decoration: underline; cursor: pointer; }
+.ProseMirror a:hover { color: #2563eb; }
+
+/* Blockquotes & Code */
+.ProseMirror blockquote { 
+  border-left: 4px solid #cbd5e1; 
+  padding-left: 1rem; 
+  color: #64748b; 
+  font-style: italic; 
+  margin-bottom: 0.5rem;
+}
+.ProseMirror pre { 
+  background: #1e293b; 
+  color: #fff; 
+  padding: 1rem; 
+  border-radius: 8px; 
+  font-family: monospace; 
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+}
+.ProseMirror code { 
+  background: #e2e8f0; 
+  padding: 0.125rem 0.25rem; 
+  border-radius: 4px; 
+  font-size: 0.875rem; 
+}

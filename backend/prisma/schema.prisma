@@ -1,0 +1,509 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Enums ---
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TaskType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+}
+
+enum FormFieldVisibility {
+  OPTIONAL
+  REQUIRED
+  REQUIRED_END_USERS
+  REQUIRED_AGENTS
+  INTERNAL_OPTIONAL
+  INTERNAL_REQUIRED
+  END_USERS_ONLY
+}
+
+enum KbRole {
+  NONE
+  KB_CREATOR
+  KB_REVIEWER
+  KB_APPROVER
+}
+
+enum ArticleStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+// --- Core Identity ---
+
+model User {
+  id             Int             @id @default(autoincrement())
+  orgId          Int?
+  organization   Organization?   @relation(fields: [orgId], references: [id])
+  name           String
+  email          String          @unique
+  password       String?
+  phone          String?
+  role           UserRole        @default(USER)
+  account        UserAccount?
+  tickets        Ticket[]        @relation("UserTickets")
+  createdAt      DateTime        @default(now())
+  auditLogs      AuditLog[]
+  photoUrl       String?
+  notifications  Notification[]
+}
+
+model UserAccount {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
+  status    Int      @default(1)
+  timezone  String?
+}
+
+enum StaffRole {
+  ADMIN
+  MANAGER
+  TEAM_LEADER
+  AGENT
+}
+
+model Staff {
+  id        Int       @id @default(autoincrement())
+  deptId    Int?
+  teamId    Int?
+  username  String    @unique
+  email     String    @unique
+  firstname String
+  lastname  String
+  password  String
+  phone     String?
+  isAdmin   Boolean   @default(false)
+  role      StaffRole @default(AGENT)
+  
+  department  Department? @relation(fields: [deptId], references: [id])
+  memberTeam  Team?       @relation("TeamMembers", fields: [teamId], references: [id]) // <-- ADD THIS
+  leadingTeam Team?       @relation("TeamLeader") // <-- ADD THIS
+  tickets     Ticket[]    @relation("StaffTickets")
+  tasks       Task[]
+  timeLogs    TimeLog[]
+  auditLogs   AuditLog[]
+  kbRole    KbRole   @default(NONE)
+  kbPoints  Int      @default(0)
+  createdArticles    KbArticle[] @relation("ArticleCreator")
+  reviewedArticles   KbArticle[] @relation("ArticleReviewer")
+  approvedArticles   KbArticle[] @relation("ArticleApprover")
+  editedVersions     KbArticleVersion[] @relation("VersionEditor")
+  photoUrl    String?
+  notifications Notification[]  
+}
+
+model Department {
+  id        Int     @id @default(autoincrement())
+  name      String
+  slaId     Int?
+  sla       Sla?    @relation(fields: [slaId], references: [id])
+  staff     Staff[]
+  tickets   Ticket[]
+  teams     Team[]  // <-- ADD THIS
+  forms     Form[]
+  cannedResponses CannedResponse[]
+}
+
+model Team {
+  id        Int     @id @default(autoincrement())
+  name      String
+  deptId    Int
+  leaderId  Int?    @unique // <-- ADD @unique here
+  
+  department Department @relation(fields: [deptId], references: [id])
+  leader     Staff?     @relation("TeamLeader", fields: [leaderId], references: [id])
+  members    Staff[]    @relation("TeamMembers")
+  tickets    Ticket[]   @relation("TeamTickets") // <-- ADD THIS
+}
+
+model Sla {
+  id          Int           @id @default(autoincrement())
+  name        String
+  gracePeriod Int        
+  responseGracePeriod Int          @default(1)
+  priority    TicketPriority?
+  scheduleId  Int?           // <-- ADD THIS
+  schedule    Schedule?     @relation(fields: [scheduleId], references: [id])      // <-- ADD THIS
+  departments Department[]
+  tickets     Ticket[]
+  forms       Form[]
+}
+
+// --- Core Ticketing ---
+model Ticket {
+  id          Int             @id @default(autoincrement())
+  number      String          @unique
+  subject     String
+  userId      Int
+  user        User            @relation("UserTickets", fields: [userId], references: [id])
+  staffId     Int?
+  staff       Staff?          @relation("StaffTickets", fields: [staffId], references: [id])
+  teamId      Int?
+  team        Team?           @relation("TeamTickets", fields: [teamId], references: [id]) // <-- ADD THIS
+  deptId      Int
+  department  Department      @relation(fields: [deptId], references: [id])
+  status      String          @default("OPEN")
+  priority    TicketPriority  @default(NORMAL)
+  slaId       Int?
+  sla         Sla?            @relation(fields: [slaId], references: [id])
+  customData  Json?
+  dueDate     DateTime?
+  responseDueDate DateTime?
+  firstResponseAt DateTime?
+  formId      Int?
+  form        Form?           @relation(fields: [formId], references: [id])
+  thread      Thread?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  tasks       Task[]
+  rating       Int?
+  ratingComment String?
+  tags       Tag[]
+  mergedIntoId Int?
+  mergedInto   Ticket?  @relation("MergedTickets", fields: [mergedIntoId], references: [id])
+  mergedChildren Ticket[] @relation("MergedTickets")
+  timeLogs       TimeLog[]
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  ticketId    Int
+  ticket      Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  type        TaskType  @default(INTERNAL)
+  status      TaskStatus @default(OPEN)
+  staffId     Int?
+  staff       Staff?    @relation(fields: [staffId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Thread {
+  id        Int             @id @default(autoincrement())
+  ticketId  Int             @unique
+  ticket    Ticket          @relation(fields: [ticketId], references: [id])
+  entries   ThreadEntry[]
+  events    ThreadEvent[]
+}
+
+model ThreadEntry {
+  id        Int       @id @default(autoincrement())
+  threadId  Int
+  thread    Thread    @relation(fields: [threadId], references: [id])
+  type      String    
+  body      String
+  createdAt DateTime  @default(now())
+  attachments Attachment[]
+}
+
+model ThreadEvent {
+  id        Int      @id @default(autoincrement())
+  threadId  Int
+  thread    Thread   @relation(fields: [threadId], references: [id])
+  type      String   // e.g., 'assigned', 'status', 'priority'
+  message   String   // Human readable log
+  staffId   Int?
+  createdAt DateTime @default(now())
+}
+
+model Attachment {
+  id            Int      @id @default(autoincrement())
+  filename      String
+  url           String
+  threadEntryId Int
+  threadEntry   ThreadEntry @relation(fields: [threadEntryId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model Sequence {
+  prefix String @id
+  count  Int    @default(0)
+}
+
+// --- Dynamic Forms ---
+model Form {
+  id        Int           @id @default(autoincrement())
+  title     String
+  fields    FormField[]
+  entries   FormEntry[]
+  slaId     Int?          // <-- ADD THIS
+  sla       Sla?          @relation(fields: [slaId], references: [id]) // <-- ADD THIS
+  deptId     Int?          // <-- ADD THIS
+  department Department?   @relation(fields: [deptId], references: [id]) // <-- ADD THIS
+  organizations OrganizationForm[]
+  ticketPrefix    String?       @default("TCK")
+  ticketSeqType   String?       @default("SEQUENTIAL")
+  tickets     Ticket[]  
+}
+
+model FormField {
+  id        Int      @id @default(autoincrement())
+  formId    Int
+  form      Form     @relation(fields: [formId], references: [id])
+  name      String
+  type      String   
+  visibility FormFieldVisibility @default(OPTIONAL)
+  order     Int      @default(0)
+  options   ListOption[]
+}
+
+model ListOption {
+  id        Int      @id @default(autoincrement())
+  fieldId   Int
+  field     FormField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  value     String
+}
+
+model FormEntry {
+  id        Int      @id @default(autoincrement())
+  formId    Int
+  form      Form     @relation(fields: [formId], references: [id])
+  values    Json?
+}
+
+model Schedule {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  days      ScheduleDay[]
+  slas      Sla[]
+}
+
+model ScheduleDay {
+  id           Int      @id @default(autoincrement())
+  scheduleId   Int
+  schedule     Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int      // 0 = Sunday, 6 = Saturday
+  isWorkingDay Boolean  @default(false)
+  startTime    Int      @default(9)
+  endTime      Int      @default(17)
+}
+
+model Holiday {
+  id    Int      @id @default(autoincrement())
+  name  String
+  date  DateTime @unique
+}
+
+model Organization {
+  id        Int      @id @default(autoincrement())
+  name      String
+  parentId  Int?
+  parent    Organization?  @relation("OrgHierarchy", fields: [parentId], references: [id])
+  children  Organization[] @relation("OrgHierarchy")
+  users     User[]
+  forms     OrganizationForm[]
+  createdAt DateTime @default(now())
+  phone     String?
+  website   String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
+  country   String?
+  isBillable Boolean @default(false)
+  hourlyRate Float   @default(0)
+}
+
+model OrganizationForm {
+  id        Int      @id @default(autoincrement())
+  orgId     Int
+  formId    Int
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  form        Form        @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, formId]) // Prevent duplicates
+}
+
+enum UserRole {
+  USER
+  MANAGER
+}
+
+model EmailSetting {
+  id           Int    @id @default(autoincrement())
+  smtpHost     String?
+  smtpPort     Int?
+  smtpUser     String?
+  smtpPass     String?
+  encryption   String? @default("STARTTLS") // NONE, STARTTLS, SSL
+  imapHost     String?
+  imapPort     Int?
+  imapUser     String?
+  imapPass     String?
+}
+
+model EmailTemplate {
+  id        Int    @id @default(autoincrement())
+  type      String @unique // e.g., "TICKET_CREATED", "AGENT_REPLY"
+  subject   String
+  body      String // Can use {{variables}} like {{ticketNumber}}, {{message}}
+  isEnabled Boolean @default(true)
+}
+
+model Tag {
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
+  tickets Ticket[]
+}
+
+model CannedResponse {
+  id        Int        @id @default(autoincrement())
+  title     String
+  body      String
+  departmentId Int?
+  department Department? @relation(fields: [departmentId], references: [id])
+}
+
+model AutomationRule {
+  id        Int      @id @default(autoincrement())
+  name      String
+  trigger   String   @default("TICKET_CREATED") // TICKET_CREATED, TICKET_UPDATED
+  conditions Json    // e.g., [{ field: "subject", operator: "contains", value: "Server Down" }]
+  actions    Json    // e.g., [{ type: "SET_PRIORITY", value: "URGENT" }, { type: "ASSIGN_TEAM", value: 1 }]
+  isEnabled Boolean  @default(true)
+}
+
+model TimeLog {
+  id              Int      @id @default(autoincrement())
+  ticketId        Int
+  ticket          Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  staffId         Int
+  staff           Staff    @relation(fields: [staffId], references: [id])
+  startTime       DateTime
+  endTime          DateTime?
+  durationMinutes Int      @default(0)
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  staffId   Int?
+  userId    Int?
+  action    String   // e.g., "DELETED_DEPARTMENT"
+  entity    String   // e.g., "Department"
+  entityId  Int?
+  message   String
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  staff     Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model KbArticle {
+  id              Int           @id @default(autoincrement())
+  title           String
+  
+  publicContent   String
+  internalContent String? // Internal notes/SOPs for agents only
+  
+  status          ArticleStatus @default(DRAFT)
+  isStale         Boolean       @default(false) // For Stale Content Auditing
+  
+  sectionId       Int
+  section         KbSection     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  
+  creatorId       Int
+  creator         Staff         @relation("ArticleCreator", fields: [creatorId], references: [id])
+  
+  reviewerId      Int?
+  reviewer       Staff?        @relation("ArticleReviewer", fields: [reviewerId], references: [id])
+  
+  approverId     Int?
+  approver       Staff?        @relation("ArticleApprover", fields: [approverId], references: [id])
+  
+  versions       KbArticleVersion[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model KbArticleVersion {
+  id         Int      @id @default(autoincrement())
+  articleId  Int
+  article    KbArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  version    Int
+  editedById Int
+  editedBy   Staff    @relation("VersionEditor", fields: [editedById], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model KbCategory {
+  id        Int         @id @default(autoincrement())
+  name      String
+  sections  KbSection[]
+}
+
+model KbSection {
+  id         Int         @id @default(autoincrement())
+  categoryId Int
+  category   KbCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String
+  articles   KbArticle[]
+}
+
+model CompanySetting {
+  id              Int    @id @default(autoincrement())
+  companyName     String @default("OOESupport")
+  logoUrl         String?
+  faviconUrl      String?
+  themeColor      String @default("#3b82f6") // Default Tailwind Blue
+  landingTitle    String @default("Modern Ticketing, Seamless Support.")
+  landingSubtitle String @default("A powerful, real-time helpdesk platform designed to streamline your customer support workflow. Built for speed, scalability, and simplicity.")
+  supportEmail    String?
+  supportPhone    String?
+  address         String?
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  staffId   Int?
+  userId    Int?
+  ticketId  Int
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  staff     Staff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TicketStatusConfig {
+  id        Int    @id @default(autoincrement())
+  name      String @unique
+  color     String @default("#3b82f6") // Hex color for UI badges
+  isClosed  Boolean @default(false) // If true, SLA timer stops
+}
